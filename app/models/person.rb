@@ -1,16 +1,21 @@
 class Person < ActiveRecord::Base
   #code to get next un-used id # in the 800 range
   #((801...900).to_a - (array_from_db_of_taken_numbers))[0]
+
+
+  attr_accessible :firstname, :lastname, :gender, :date_of_birth, :zipcode, :city, :state, :status, :end_date, :department, :icsid, :title, :title_ids, :start_date, :division1, :division2, :comments
+  attr_accessible :channels_attributes
+
+  has_many :channels, :autosave => true
+  accepts_nested_attributes_for :channels, :reject_if => :all_blank, :allow_destroy => true
   before_save :title_order
 
-  attr_accessible :firstname, :lastname, :status, :icsid, :department, :city, :state, :zipcode, :start_date, :end_date , :title, :gender, :date_of_birth,:division1, :division2, :channels_attributes, :title_ids, :title_order, :comments
-
-  #Having a condition on this association allows all the chaining magic to happen. 
+  #Having a condition on this association allows all the chaining magic to happen.
   #Could I use a named scope, and/or could I have another association for 'active_certs' ?
   has_many :certs, :conditions => {:status =>'Active' }
 
-  has_many :channels
-  accepts_nested_attributes_for :channels, allow_destroy: true
+  # Since phones and emails derive off of channels, is "has_many :channels" below redundant?
+
   has_many :courses, :through => :certs
   has_many :skills, :through => :courses
   has_and_belongs_to_many :titles
@@ -76,6 +81,22 @@ class Person < ActiveRecord::Base
     return 1 if self.skilled?("SAR Tech 1")
     return 2 if self.skilled?("SAR Tech 2")
     return 3 if self.skilled?("SAR Tech 3")
+  end
+
+  def phones
+    channels.where(:type => ["Cell", "Landline", "Phone"]).order(:priority)
+  end
+
+  def phone
+    phones.first.content if phones.present?
+  end
+
+  def emails
+    channels.where(:type => "Email").order(:priority)
+  end
+
+  def email
+    emails.first.content if emails.present?
   end
 
 
